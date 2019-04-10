@@ -157,7 +157,6 @@
 (use-package smart-mode-line
   :ensure t
   :config
-  (setq sml/theme 'respectful)
   (sml/toggle-shorten-directory)
   (sml/toggle-shorten-modes)
   (setq sml/no-confirm-load-theme t)
@@ -347,3 +346,6 @@
      `(company-scrollbar-fg ((t (:background ,(color-lighten-name bg 5)))))
      `(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
      `(company-tooltip-common ((t (:inherit font-lock-constant-face))))))
+
+;; set modeline colors
+(sml/apply-theme 'respectful)
