@@ -132,15 +132,22 @@
   (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options))
 
 ;python
-(use-package company-jedi
+(use-package elpy
   :ensure t
   :config
-  (setq jedi:environment-virtualenv (list (expand-file-name "~/.emacs.d/.python-environments/")))
-  (add-hook 'python-mode-hook 'jedi:setup)
-  (setq jedi:complete-on-dot t)
-  (setq jedi:use-shortcuts t)
-  (add-to-list 'company-backends 'company-jedi))
+  (add-to-list 'company-backends 'elpy-company-backend)
+  :init
+  (elpy-enable))
+(when (require 'flycheck nil t)
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  (add-hook 'elpy-mode-hook 'flycheck-mode)
+  )
 
+(use-package py-autopep8
+  :ensure t
+  :config
+  (add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
+  )
 
 ;; Syntax checking
 (use-package flycheck
@@ -151,7 +158,9 @@
 (use-package rainbow-delimiters
   :ensure t
   :init
-  (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
+  (add-hook 'emacs-lisp-mode-hook 'rainbow-delimiters-mode)
+  (add-hook 'scheme-mode-hook 'rainbow-delimiters-mode)
+  )
 
 ;; Modeline
 (use-package smart-mode-line
@@ -203,6 +212,16 @@
 (add-hook 'c-mode-hook 'yas-minor-mode)
 (add-hook 'emacs-lisp-mode-hook 'yas-minor-mode)
 (add-hook 'latex-mode-hook 'yas-minor-mode)
+
+;; Manage indent better
+(use-package aggressive-indent
+  :ensure t
+  :config
+  (global-aggressive-indent-mode 1))
+
+;; Markdown
+(use-package markdown-mode
+  :ensure t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; display columns
@@ -242,7 +261,7 @@
 (tool-bar-mode -1)
 ;; Make sure syntax highliting is on
 (global-font-lock-mode 1)
-
+(setq python-shell-enable-font-lock nil) ; if you don't do this then python shell is unbarably slow
 ;; Don't display default init screen
 (setq inhibit-startup-message t)
 
@@ -276,7 +295,7 @@
 (setq org-src-window-setup 'current-window) ; Edit code in same window
 (add-hook 'org-mode-hook 'org-indent-mode) ; Visual indentation
 
-;; Transpanrency
+;; Transpanren
 (set-frame-parameter (selected-frame) 'alpha ' (95 . 90))
 (add-to-list 'default-frame-alist '(alpha . (95 . 90)))
 
@@ -318,7 +337,7 @@
  '(gdb-many-windows t)
  '(package-selected-packages
    (quote
-    (company-jedi flycheck yasnippet-snippets yasnippet company-irony expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
+    (markdown-mode aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet company-irony expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
