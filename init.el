@@ -117,7 +117,7 @@
   (define-key company-active-map (kbd "C-n") #'company-select-next)
   (define-key company-active-map (kbd "C-p") #'company-select-previous))
 
-;C/C++
+					;C/C++
 (use-package company-irony
   :ensure t
   :config
@@ -131,7 +131,7 @@
   (add-hook 'c-mode-hook 'irony-mode)
   (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options))
 
-;python
+					;python
 (use-package elpy
   :ensure t
   :config
@@ -140,9 +140,7 @@
   (elpy-enable))
 (when (require 'flycheck nil t)
   (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-  (add-hook 'elpy-mode-hook 'flycheck-mode)
-  )
-
+  (add-hook 'elpy-mode-hook 'flycheck-mode))
 (use-package py-autopep8
   :ensure t
   :config
@@ -219,9 +217,6 @@
   :config
   (global-aggressive-indent-mode 1))
 
-;; Markdown
-(use-package markdown-mode
-  :ensure t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; display columns
@@ -337,7 +332,7 @@
  '(gdb-many-windows t)
  '(package-selected-packages
    (quote
-    (markdown-mode aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet company-irony expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
+    (aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet company-irony expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -368,3 +363,6 @@
 
 ;; set modeline colors
 (sml/apply-theme 'respectful)
+
+;; set indentation highlight color for languages that need it
+(set-face-background 'highlight-indentation-face "#1e9919332066")
