@@ -223,6 +223,13 @@
 (line-number-mode 1)
 (column-number-mode 1)
 
+;; Auto refresh buffers
+(global-auto-revert-mode t)
+
+;; Spell checking
+(add-hook 'prog-mode-hook 'flyspell-prog-mode)
+(add-hook 'latex-mode-hook 'flyspell-mode-on)
+
 ;; Splitting window shortcuts
 (defun split-and-follow-horizontally ()
   (interactive)
@@ -351,15 +358,15 @@
 (set-face-background 'hl-line "#171318")
 
 ;; set company colors
-  (require 'color)
-  
-  (let ((bg (face-attribute 'default :background)))
-    (custom-set-faces
-     `(company-tooltip ((t (:inherit default :background ,(color-lighten-name bg 2)))))
-     `(company-scrollbar-bg ((t (:background ,(color-lighten-name bg 10)))))
-     `(company-scrollbar-fg ((t (:background ,(color-lighten-name bg 5)))))
-     `(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
-     `(company-tooltip-common ((t (:inherit font-lock-constant-face))))))
+(require 'color)
+
+(let ((bg (face-attribute 'default :background)))
+  (custom-set-faces
+   `(company-tooltip ((t (:inherit default :background ,(color-lighten-name bg 2)))))
+   `(company-scrollbar-bg ((t (:background ,(color-lighten-name bg 10)))))
+   `(company-scrollbar-fg ((t (:background ,(color-lighten-name bg 5)))))
+   `(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
+   `(company-tooltip-common ((t (:inherit font-lock-constant-face))))))
 
 ;; set modeline colors
 (sml/apply-theme 'respectful)
