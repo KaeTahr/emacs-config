@@ -102,7 +102,9 @@
   :config
   (dashboard-setup-startup-hook)
   (setq dashboard-items '((recents . 10)))
-  (setq dashboard-banner-logo-title "ドイツ世界一"))
+					; when i figure out projectile			  (projects . 5)))
+  (setq dashboard-banner-logo-title "ドイツ世界一")
+  (setq dashboard-startup-banner "~/Pictures/cropped2.png"))
 
 ;; autocompletion
 (use-package company
@@ -264,8 +266,11 @@
 ;; Make sure syntax highliting is on
 (global-font-lock-mode 1)
 (setq python-shell-enable-font-lock nil) ; if you don't do this then python shell is unbarably slow
+
+;; Init screen and dashboard configuration:
 ;; Don't display default init screen
 (setq inhibit-startup-message t)
+
 
 ;; Display relative line numbers
 (setq-default display-line-numbers 'relative)
