@@ -1,3 +1,10 @@
+;; Load waifu
+(add-to-list 'load-path "~/.emacs.d/lisp/")
+(load "waifu")
+(setq waifu-name "Holo")
+(setq weeb-name "KaeTah'r")
+(global-set-key (kbd "C-c c") 'comfort)
+
 ;; Stuff related to packages
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -14,6 +21,9 @@
 (unless (package-installed-p 'xresources-theme)
   (package-refresh-contents)
   (package-install 'xresources-theme))
+(defvar my:theme 'xresources)
+(defvar my:theme-window-loaded nil)
+(defvar my:theme-terminal-loaded nil)
 
 ;; Enable and start which key to make it easier to learn emacs
 ;; Or so you don't forget commands
@@ -103,7 +113,7 @@
   (dashboard-setup-startup-hook)
   (setq dashboard-items '((recents . 10)))
 					; when i figure out projectile			  (projects . 5)))
-  (setq dashboard-banner-logo-title "ドイツ世界一")
+  (setq dashboard-banner-logo-title (get-comfort))
   (setq dashboard-startup-banner "~/Pictures/cropped2.png"))
 
 ;; autocompletion
@@ -183,6 +193,7 @@
   (diminish 'undo-tree-mode)
   (diminish 'rainbow-mode))
 
+;; Fix this shit
 ;; Improve kill ring
 (use-package popup-kill-ring
   :ensure t
@@ -219,6 +230,11 @@
   :config
   (global-aggressive-indent-mode 1))
 
+;; quake terminal (not on i3 though welp)
+(use-package equake
+  :ensure t
+  :config
+  (global-set-key (kbd "C-`") 'equake-invoke))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; display columns
@@ -230,7 +246,7 @@
 
 ;; Spell checking
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
-(add-hook 'latex-mode-hook 'flyspell-mode-on)
+(add-hook 'latex-mode-hook 'flyspell-mode)
 
 ;; Splitting window shortcuts
 (defun split-and-follow-horizontally ()
@@ -265,7 +281,7 @@
 (tool-bar-mode -1)
 ;; Make sure syntax highliting is on
 (global-font-lock-mode 1)
-(setq python-shell-enable-font-lock nil) ; if you don't do this then python shell is unbarably slow
+(setq python-shell-enable-font-lock nil) ; if you don't do this then python shell is unbearably slow
 
 ;; Init screen and dashboard configuration:
 ;; Don't display default init screen
@@ -286,7 +302,6 @@
 (defadvice ansi-term (before force-bash)
   (interactive (list my-term-shell)))
 (ad-activate 'ansi-term)
-(global-set-key (kbd "<C-return>") 'ansi-term)
 
 ;;Alias for yes or no
 (defalias 'yes-or-no-p 'y-or-n-p)
@@ -302,28 +317,67 @@
 (setq org-src-window-setup 'current-window) ; Edit code in same window
 (add-hook 'org-mode-hook 'org-indent-mode) ; Visual indentation
 
-;; Transpanren
+;; Daemon configuration
+
+;; if running a daemon, intelligently apply the theme to the frame
+(if (daemonp)
+    (add-hook 'after-make-frame-functions(lambda (frame)
+					   (select-frame frame)
+					   (if (window-system frame)
+					       (unless my:theme-window-loaded
+						 (if my:theme-terminal-loaded
+						     (enable-theme my:theme)
+						   (load-theme my:theme t))
+						 (setq my:theme-window-loaded t))
+					     (unless my:theme-terminal-loaded
+					       (if my:theme-window-loaded
+						   (enable-theme my:theme)
+						 (load-theme my:theme t))
+					       (setq my:theme-terminal-loaded t)))))
+
+  (progn
+    (load-theme my:theme t)
+    (if (display-graphic-p)
+        (setq my:theme-window-loaded t)
+      (setq my:theme-terminal-loaded t))))
+;;make it so dashboard is the initial thing
+(setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+;; stuff that the daemon should load on each frame
+(if (daemonp)
+    (add-hook 'after-make-frame-functions
+	      (lambda (frame)
+		;; (with-selected-frame frame (set-mouse-color "pink"))
+		(global-prettify-symbols-mode t)
+		(beacon-mode t)
+		;; (global-hl-line-mode t)
+		)))
+  
+;  (set-mouse-color "pink"))
+
+
+;; Transparency
 (set-frame-parameter (selected-frame) 'alpha ' (95 . 90))
 (add-to-list 'default-frame-alist '(alpha . (95 . 90)))
 
- (defun toggle-transparency ()
-   (interactive)
-   (let ((alpha (frame-parameter nil 'alpha)))
-     (set-frame-parameter
-      nil 'alpha
-      (if (eql (cond ((numberp alpha) alpha)
-                     ((numberp (cdr alpha)) (cdr alpha))
-                     ;; Also handle undocumented (<active> <inactive>) form.
-                     ((numberp (cadr alpha)) (cadr alpha)))
-               100)
-          '(95 . 90) '(100 . 100)))))
+(defun toggle-transparency ()
+  (interactive)
+  (let ((alpha (frame-parameter nil 'alpha)))
+    (set-frame-parameter
+     nil 'alpha
+     (if (eql (cond ((numberp alpha) alpha)
+                    ((numberp (cdr alpha)) (cdr alpha))
+                    ;; Also handle undocumented (<active> <inactive>) form.
+                    ((numberp (cadr alpha)) (cadr alpha)))
+              100)
+         '(95 . 90) '(100 . 100)))))
 (global-set-key (kbd "C-c t") 'toggle-transparency)
 
 ;; disable line numbers on the shell and terminal modes
 (add-hook 'shell-mode-hook (lambda ()
 			     (setq display-line-numbers 'nil)))
 (add-hook 'term-mode-hook (lambda ()
-			    (setq display-line-numbers 'nil)))
+			    (setq display-line-numbers 'nil)
+			    (beacon-mode 0)))
 (add-hook 'dashboard-mode-hook (lambda ()
 				 (setq display-line-numbers 'nil)))
 
@@ -340,11 +394,16 @@
  '(custom-enabled-themes (quote (xresources)))
  '(custom-safe-themes
    (quote
-    ("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "3c83b3676d796422704082049fc38b6966bcad960f896669dfc21a7a37a748fa" "86704574d397606ee1433af037c46611fb0a2787e8b6fd1d6c96361575be72d2" "3cd4f09a44fe31e6dd65af9eb1f10dc00d5c2f1db31a427713a1784d7db7fdfc" default)))
+    ("bbef8cbdabf3b084dd01e548e064a1c87e857e2332a8defdf85520ba2b4fc6f1" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "3c83b3676d796422704082049fc38b6966bcad960f896669dfc21a7a37a748fa" "86704574d397606ee1433af037c46611fb0a2787e8b6fd1d6c96361575be72d2" "3cd4f09a44fe31e6dd65af9eb1f10dc00d5c2f1db31a427713a1784d7db7fdfc" default)))
+ '(equake-default-sh-command "/bin/bash")
+ '(equake-default-shell (quote ansi-term))
+ '(equake-opacity-active 95)
+ '(equake-opacity-inactive 90)
+ '(equake-size-height 1.0)
  '(gdb-many-windows t)
  '(package-selected-packages
    (quote
-    (aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet company-irony expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
+    (equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet company-irony expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -359,7 +418,7 @@
  '(mode-line ((t (:background "black" :foreground "#9278d6" :box (:line-width -1 :style released-button))))))
 
 ;; Highlight line on cursor
-(when window-system(global-hl-line-mode t))
+(global-hl-line-mode t)
 (set-face-background 'hl-line "#171318")
 
 ;; set company colors
