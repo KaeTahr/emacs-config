@@ -6,6 +6,7 @@
 (global-set-key (kbd "C-c c") 'comfort)
 
 ;; Stuff related to packages
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 (require 'package)
 (setq package-enable-at-startup nil)
 (add-to-list 'package-archives
@@ -159,6 +160,10 @@
   (add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
   )
 
+(use-package pydoc-info
+  :ensure t
+  )
+
 ;; Syntax checking
 (use-package flycheck
   :ensure t
@@ -235,6 +240,10 @@
   :ensure t
   :config
   (global-set-key (kbd "C-`") 'equake-invoke))
+
+;; Install htmlize so org can export to HTML
+(use-package htmlize
+  :ensure t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; display columns
@@ -403,7 +412,7 @@
  '(gdb-many-windows t)
  '(package-selected-packages
    (quote
-    (equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet company-irony expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
+    (pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
