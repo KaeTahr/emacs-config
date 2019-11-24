@@ -244,6 +244,12 @@
 ;; Install htmlize so org can export to HTML
 (use-package htmlize
   :ensure t)
+
+;; Enable folding
+(use-package origami
+  :ensure t
+  :config
+  (global-origami-mode))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; display columns
@@ -412,7 +418,7 @@
  '(gdb-many-windows t)
  '(package-selected-packages
    (quote
-    (pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
+    (origami pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
