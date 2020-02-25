@@ -1,9 +1,12 @@
 ;; Load waifu
-(add-to-list 'load-path "~/.emacs.d/lisp/")
-(load "waifu")
+;;(add-to-list 'load-path "~/.emacs.d/lisp/")
+(let ((default-directory "~/.emacs.d/lisp/"))
+  (normal-top-level-add-subdirs-to-load-path))
+(require 'waifu)
 (setq waifu-name "Holo")
 (setq weeb-name "KaeTah'r")
 (global-set-key (kbd "C-c c") 'comfort)
+(require 'roll)
 
 ;; Stuff related to packages
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
@@ -102,8 +105,8 @@
   (setq switch-window-shortcut-style 'qwerty)
   (setq switch-window-qwerty-shortcuts
 	'("a" "s" "d" "f" "j" "k" "l" ";"))
-  :bind
-  ([remap other-window] . switch-window))
+	:bind
+	([remap other-window] . switch-window))
 
 ;; Deleting whitespace
 (use-package hungry-delete
@@ -206,7 +209,7 @@
 ;; Improve kill ring
 (use-package popup-kill-ring
   :ensure t
-  :bind ("M-y" . popup-kill-end))
+  )
 
 ;; Mark multiple (like search and replace, just a little easier to control)
 ;; Can act like multiple cursors like sublime if you really need to have something like that
@@ -249,17 +252,24 @@
 (use-package htmlize
   :ensure t)
 
-;; Enable folding
-(use-package origami
-  :ensure t
-  :config
-  (global-origami-mode))
-
 ;; update emacs packages
 (use-package auto-package-update
   :ensure t
   :init
   (auto-package-update-maybe))
+
+;; nice tree for quick project navigation
+(use-package treemacs
+  :ensure t
+  :config
+  (global-set-key (kbd "<f1>") 'treemacs)
+  )
+
+(add-hook 'treemacs-mode-hook (lambda ()
+				(setq display-line-numbers 'nil)))
+(use-package treemacs-evil
+  :after treemacs evil
+  :ensure t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; display columns
@@ -272,6 +282,9 @@
 ;; Spell checking
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
 (add-hook 'latex-mode-hook 'flyspell-mode)
+
+;; code folding
+(add-hook 'prog-mode-hook 'hs-minor-mode)
 
 ;; Splitting window shortcuts
 (defun split-and-follow-horizontally ()
@@ -312,7 +325,6 @@
 ;; Cleaning up shell mode
 (add-hook 'eshell-mode 'beacon-mode)
 (add-hook 'equake-mode 'beacon-mode)
-(add-hook 'equake-mode 'column-number-mode)
 
 ;; Init screen and dashboard configuration:
 ;; Don't display default init screen
@@ -377,10 +389,10 @@
 (if (daemonp)
     (add-hook 'after-make-frame-functions
 	      (lambda (frame)
-		;; (with-selected-frame frame (set-mouse-color "pink"))
+		(with-selected-frame frame (set-mouse-color "purple"))
 		(global-prettify-symbols-mode t)
 		(beacon-mode t)
-		;; (global-hl-line-mode t)
+		(global-hl-line-mode t)
 		)))
   
 ;  (set-mouse-color "pink"))
@@ -434,7 +446,7 @@
  '(gdb-many-windows t)
  '(package-selected-packages
    (quote
-    (auto-package-update origami pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
+    (treemacs-evil treemacs neotree auto-package-update origami pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
