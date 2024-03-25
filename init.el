@@ -91,8 +91,7 @@
   (evil-set-initial-state 'term-mode 'emacs)
   (evil-set-initial-state 'dired-mode 'emacs)
   (evil-set-initial-state 'eshell-mode 'emacs)
-  (evil-set-initial-state 'gdb 'emacs)
-  (evil-set-initial-state 'equake-mode 'emacs))
+  (evil-set-initial-state 'gdb 'emacs))
 
 
 ;; switching windows
@@ -120,8 +119,9 @@
   :config
   (dashboard-setup-startup-hook)
   (setq dashboard-items '((recents . 10)))
-					; when i figure out projectile			  (projects . 5)))
-  (setq dashboard-banner-logo-title (get-comfort))
+  (setq dashboard-center-content t)
+  (setq dashboard-footer-messages (list (get-comfort)))
+  (setq dashboard-banner-logo-title "Holo welcomes you to GNU Emacs, KaeTah'r!")
   (setq dashboard-startup-banner "~/Pictures/cropped2.png"))
 
 ;; autocompletion
@@ -165,10 +165,6 @@
   :ensure t
   :config
   (add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
-  )
-
-(use-package pydoc-info
-  :ensure t
   )
 
 ;; Syntax checking
@@ -242,12 +238,6 @@
   :config
   (global-aggressive-indent-mode 1))
 
-;; quake terminal (not on i3 though welp)
-(use-package equake
-  :ensure t
-  :config
-  (global-set-key (kbd "C-`") 'equake-invoke))
-
 ;; Install htmlize so org can export to HTML
 (use-package htmlize
   :ensure t)
@@ -270,6 +260,17 @@
 (use-package treemacs-evil
   :after treemacs evil
   :ensure t)
+
+;; pdfs
+(use-package pdf-tools
+  :ensure t)
+
+;;discord
+(use-package elcord
+  :unless (daemonp)
+  :ensure t
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; display columns
@@ -282,6 +283,9 @@
 ;; Spell checking
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
 (add-hook 'latex-mode-hook 'flyspell-mode)
+
+;; enforce spacing style
+(add-hook 'prog-mode-hook 'auto-fill-mode)
 
 ;; code folding
 (add-hook 'prog-mode-hook 'hs-minor-mode)
@@ -324,15 +328,10 @@
 
 ;; Cleaning up shell mode
 (add-hook 'eshell-mode 'beacon-mode)
-(add-hook 'equake-mode 'beacon-mode)
 
 ;; Init screen and dashboard configuration:
 ;; Don't display default init screen
 (setq inhibit-startup-message t)
-
-
-;; Display relative line numbers
-(setq-default display-line-numbers 'relative)
 
 (electric-pair-mode 1) ; Pairs for syntax
 (show-paren-mode 1) ;shows parenthesis pairs
@@ -349,6 +348,9 @@
 ;;Alias for yes or no
 (defalias 'yes-or-no-p 'y-or-n-p)
 
+;; display line numbers
+(setq-default display-line-numbers 1)
+
 ;; Change scroll behaviour
 (setq scroll-conservatively 100)
 
@@ -359,6 +361,8 @@
 
 (setq org-src-window-setup 'current-window) ; Edit code in same window
 (add-hook 'org-mode-hook 'org-indent-mode) ; Visual indentation
+(add-hook 'org-mode-hook 'set-fill-column 80)
+(add-hook 'org-mode-hook 'auto-fill-mode 1)
 
 ;; Daemon configuration
 
@@ -434,29 +438,30 @@
    [default default default italic underline success warning error])
  '(ansi-color-names-vector
    ["black" "#d55e00" "#009e73" "#f8ec59" "#0072b2" "#cc79a7" "#56b4e9" "white"])
- '(custom-enabled-themes (quote (xresources)))
+ '(column-number-mode t)
+ '(custom-enabled-themes '(xresources))
  '(custom-safe-themes
-   (quote
-    ("bbef8cbdabf3b084dd01e548e064a1c87e857e2332a8defdf85520ba2b4fc6f1" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "3c83b3676d796422704082049fc38b6966bcad960f896669dfc21a7a37a748fa" "86704574d397606ee1433af037c46611fb0a2787e8b6fd1d6c96361575be72d2" "3cd4f09a44fe31e6dd65af9eb1f10dc00d5c2f1db31a427713a1784d7db7fdfc" default)))
+   '("e5dc5b39fecbeeb027c13e8bfbf57a865be6e0ed703ac1ffa96476b62d1fae84" "4639288d273cbd3dc880992e6032f9c817f17c4a91f00f3872009a099f5b3f84" "bbef8cbdabf3b084dd01e548e064a1c87e857e2332a8defdf85520ba2b4fc6f1" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "3c83b3676d796422704082049fc38b6966bcad960f896669dfc21a7a37a748fa" "86704574d397606ee1433af037c46611fb0a2787e8b6fd1d6c96361575be72d2" "3cd4f09a44fe31e6dd65af9eb1f10dc00d5c2f1db31a427713a1784d7db7fdfc" default))
  '(equake-default-sh-command "/bin/bash")
- '(equake-default-shell (quote eshell))
+ '(equake-default-shell 'eshell)
  '(equake-opacity-active 95)
  '(equake-opacity-inactive 90)
  '(equake-size-height 1.0)
  '(gdb-many-windows t)
+ '(menu-bar-mode nil)
  '(package-selected-packages
-   (quote
-    (treemacs-evil treemacs neotree auto-package-update origami pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))))
+   '(elcord diminish smart-mode-line rainbow-delimiters dashboard switch-window ido-vertical-mode telega pdf-tools treemacs-evil treemacs auto-package-update origami pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))
+ '(tool-bar-mode nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#110e12" :foreground "#ffffff" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 150 :width normal :foundry "xos4" :family "xos4 Terminus"))))
- '(company-scrollbar-bg ((t (:background "#2c3324662ecc"))))
- '(company-scrollbar-fg ((t (:background "#1e9919332066"))))
+ '(default ((t (:inherit nil :stipple nil :background "#110e12" :foreground "#ffffff" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 158 :width normal :foundry "PfEd" :family "Terminus (TTF)"))))
  '(company-tooltip ((t (:inherit default :background "#1670127a17c2"))))
  '(company-tooltip-common ((t (:inherit font-lock-constant-face))))
+ '(company-tooltip-scrollbar-thumb ((t (:background "#1e9919332066"))))
+ '(company-tooltip-scrollbar-track ((t (:background "#2c3324662ecc"))))
  '(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
  '(mode-line ((t (:background "black" :foreground "#9278d6" :box (:line-width -1 :style released-button))))))
 
