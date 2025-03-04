@@ -271,6 +271,13 @@
   :ensure t
   )
 
+;;coq
+(use-package proof-general
+  :ensure t)
+
+;;copilot ew
+(use-package copilot
+  :ensure t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; display columns
@@ -450,8 +457,9 @@
  '(gdb-many-windows t)
  '(menu-bar-mode nil)
  '(package-selected-packages
-   '(elcord diminish smart-mode-line rainbow-delimiters dashboard switch-window ido-vertical-mode telega pdf-tools treemacs-evil treemacs auto-package-update origami pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))
- '(tool-bar-mode nil))
+   '(copilot elcord diminish smart-mode-line rainbow-delimiters dashboard switch-window ido-vertical-mode telega pdf-tools treemacs-evil treemacs auto-package-update origami pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))
+ '(tool-bar-mode nil)
+ '(warning-suppress-types '((comp) (comp) (comp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
