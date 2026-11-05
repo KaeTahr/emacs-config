@@ -25,8 +25,18 @@
 (load (locate-user-emacs-file (format "machines/%s.el" (system-name))) t)
 (load (locate-user-emacs-file "local.el") t)
 
-(when (find-font (font-spec :family my/font-family))
-  (set-face-attribute 'default nil :family my/font-family :height my/font-height))
+;; Fall back to a commonly installed mono font if the preferred one is
+;; missing, and always apply the height (so a missing font doesn't leave
+;; us at Emacs' tiny default size).
+(defvar my/font-fallbacks '("DejaVu Sans Mono" "Noto Sans Mono" "Liberation Mono"))
+
+(let ((family (seq-find (lambda (f) (find-font (font-spec :family f)))
+                        (cons my/font-family my/font-fallbacks))))
+  (unless (equal family my/font-family)
+    (message "Font %S not found, using %S" my/font-family family))
+  (set-face-attribute 'default nil :height my/font-height)
+  (when family
+    (set-face-attribute 'default nil :family family)))
 
 ;;;; ------------------------------------------------------------------
 ;;;; Environment (so Emacs sees nvm's node, ~/.local/bin, etc.)
@@ -279,6 +289,10 @@ Terminal frames (emacs -nw) just keep the terminal's colors."
   :custom
   (eglot-autoshutdown t)
   (eglot-events-buffer-config '(:size 0)) ; faster: no event logging
+  ;; basedpyright defaults to its strictest mode ("recommended"): hundreds of
+  ;; "type is unknown" hints on untyped code. "standard" = real errors only.
+  (eglot-workspace-configuration
+   '(:basedpyright (:analysis (:typeCheckingMode "standard"))))
   :config
   (add-to-list 'eglot-server-programs
                '((python-mode python-ts-mode) . ("basedpyright-langserver" "--stdio"))))
@@ -295,8 +309,11 @@ Terminal frames (emacs -nw) just keep the terminal's colors."
               ("M-n" . flymake-goto-next-error)
               ("M-p" . flymake-goto-prev-error)))
 
-;; Format on save: ruff for Python, prettier (project-local via npx) for JS/TS.
+;; Format on save: prettier (project-local via npx) for JS/TS.
+;; Python is NOT formatted on save (legacy files would reformat entirely and
+;; blow up diffs); run M-x apheleia-format-buffer by hand when wanted.
 (use-package apheleia
+  :hook (python-base-mode . (lambda () (setq-local apheleia-inhibit t)))
   :config
   (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-isort ruff))
   (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff))
@@ -388,16 +405,26 @@ Terminal frames (emacs -nw) just keep the terminal's colors."
   (markdown-fontify-code-blocks-natively t)    ; real syntax colors in ``` blocks
   (markdown-italic-underscore t)
   :bind (:map markdown-mode-map
-              ("C-c C-c m" . markdown-preview-mode)))
+              ("C-c C-c m" . markdown-preview-mode))
+  :config
+  ;; Headers in the same font as the text (header scaling otherwise switches
+  ;; them to variable-pitch, which has no font set); colour unchanged.
+  (set-face-attribute 'markdown-header-face nil
+                      :inherit 'font-lock-function-name-face))
 
 (use-package markdown-preview-mode
   :commands markdown-preview-mode
   :config
+  ;; GitHub's dark style + mermaid's dark theme (the package default,
+  ;; Solarized Dark, clashes with mermaid's themes).
+  (setq markdown-preview-stylesheets
+        (list "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-dark.min.css"
+              "<style>html,body{background:#0d1117}.markdown-body{max-width:980px;margin:0 auto;padding:32px}</style>"))
   ;; Render ```mermaid blocks on every update.
   (add-to-list 'markdown-preview-javascript
                "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js")
   (setq markdown-preview-script-oninit
-        "mermaid.initialize({ startOnLoad: false, theme: 'default' });"
+        "mermaid.initialize({ startOnLoad: false, theme: 'dark' });"
         markdown-preview-script-onupdate
         "document.querySelectorAll('code.language-mermaid, pre.mermaid > code').forEach(function (c) {
            var pre = c.parentNode; pre.className = 'mermaid'; pre.textContent = c.textContent;
@@ -479,7 +506,10 @@ Terminal frames (emacs -nw) just keep the terminal's colors."
 (defun my/maybe-enable-copilot ()
   "Enable copilot only once its language server is installed.
 Otherwise copilot-mode errors in every code buffer on a fresh machine."
-  (if (ignore-errors (copilot-server-executable))
+  ;; `copilot-server-executable' isn't autoloaded, so load copilot first;
+  ;; otherwise this is a void-function swallowed by `ignore-errors'.
+  (if (and (require 'copilot nil t)
+           (ignore-errors (copilot-server-executable)))
       (progn (copilot-mode 1)
              (copilot-nes-mode 1))
     (message "Copilot server missing: run M-x copilot-install-server")))
