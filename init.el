@@ -421,7 +421,17 @@ Terminal frames (emacs -nw) just keep the terminal's colors."
   (diff-hl-change ((t (:foreground "#3794ff" :background "#3794ff"))))
   (diff-hl-delete ((t (:foreground "#e05561" :background "#e05561"))))
   :config
-  (diff-hl-flydiff-mode 1))             ; update as you type, not just on save
+  (diff-hl-flydiff-mode 1)              ; update as you type, not just on save
+
+  ;; Commits made outside Emacs/magit don't touch the file, so nothing tells
+  ;; diff-hl. auto-revert re-checks each buffer's git state; redraw the
+  ;; markers when that state changes (e.g. edited -> committed).
+  (define-advice vc-refresh-state (:around (fn &rest args) my/diff-hl-on-vc-change)
+    (let ((before (and buffer-file-name (vc-state buffer-file-name))))
+      (apply fn args)
+      (when (and diff-hl-mode buffer-file-name
+                 (not (eq before (vc-state buffer-file-name))))
+        (diff-hl-update)))))
 
 ;; GitLens-style blame at the end of the current line.
 ;; For full-file blame: M-x magit-blame (or C-x v g).
@@ -656,7 +666,15 @@ With prefix argument NEW, open an additional terminal."
   (treemacs-filewatch-mode 1)
   (treemacs-git-mode 'deferred)
   (treemacs-hide-gitignored-files-mode 1)
-  (treemacs-fringe-indicator-mode 'always))
+  (treemacs-fringe-indicator-mode 'always)
+  :custom-face
+  ;; Same meaning as the diff-hl colors (the theme makes most of these red).
+  (treemacs-git-modified-face ((t (:foreground "#3794ff"))))
+  (treemacs-git-added-face ((t (:foreground "#50c878"))))
+  (treemacs-git-untracked-face ((t (:foreground "#50c878" :slant italic))))
+  (treemacs-git-renamed-face ((t (:foreground "#9278d6"))))
+  (treemacs-git-conflict-face ((t (:foreground "#e05561" :weight bold))))
+  (treemacs-git-ignored-face ((t (:foreground "#4f4655")))))
 (use-package treemacs-evil :after (treemacs evil))
 (use-package treemacs-magit :after (treemacs magit))
 
