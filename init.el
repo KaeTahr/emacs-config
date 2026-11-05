@@ -1,417 +1,116 @@
-;; Load waifu
-;;(add-to-list 'load-path "~/.emacs.d/lisp/")
-(let ((default-directory "~/.emacs.d/lisp/"))
-  (normal-top-level-add-subdirs-to-load-path))
-(require 'waifu)
-(setq waifu-name "Holo")
-(setq weeb-name "KaeTah'r")
-(global-set-key (kbd "C-c c") 'comfort)
-(require 'roll)
+;;; init.el --- KaeTah'r's Emacs config -*- lexical-binding: t; -*-
 
-;; Stuff related to packages
-(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
+;;;; ------------------------------------------------------------------
+;;;; Package management
+;;;; ------------------------------------------------------------------
+
 (require 'package)
-(setq package-enable-at-startup nil)
-(add-to-list 'package-archives
-	     '("melpa" .  "https://melpa.org/packages/"))
-(package-initialize)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; My Packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Make sure use-package is installed
-;; Installed using Uncle Dave's method so this config is portable
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
-;; Check and install theme if needed
-(unless (package-installed-p 'xresources-theme)
-  (package-refresh-contents)
-  (package-install 'xresources-theme))
-(defvar my:theme 'xresources)
-(defvar my:theme-window-loaded nil)
-(defvar my:theme-terminal-loaded nil)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(require 'use-package)
+(setq use-package-always-ensure t)
 
-;; Enable and start which key to make it easier to learn emacs
-;; Or so you don't forget commands
-(use-package which-key
-  :ensure t
-  :init
-  (which-key-mode))
+;; Keep Customize's output out of init.el (and out of git).
+(setq custom-file (locate-user-emacs-file "custom.el"))
+(load custom-file t)
 
-;; Enable beacon
-(use-package beacon
-  :ensure t
-  :init
-  (beacon-mode 1))
+;;;; ------------------------------------------------------------------
+;;;; Per-machine settings
+;;;; ------------------------------------------------------------------
+;; Defaults here; machines/<hostname>.el (tracked) overrides them;
+;; local.el (untracked) is for secrets or one-off experiments.
 
-;; Can try packages without installing them
-(use-package try
-  :ensure t)
+(defvar my/font-family "Terminus (TTF)")
+(defvar my/font-height 140)
 
-;; Nicer bullets for org mode
-(use-package org-bullets
-  :ensure t
+(load (locate-user-emacs-file (format "machines/%s.el" (system-name))) t)
+(load (locate-user-emacs-file "local.el") t)
+
+(when (find-font (font-spec :family my/font-family))
+  (set-face-attribute 'default nil :family my/font-family :height my/font-height))
+
+;;;; ------------------------------------------------------------------
+;;;; Environment (so Emacs sees nvm's node, ~/.local/bin, etc.)
+;;;; ------------------------------------------------------------------
+
+(use-package exec-path-from-shell
+  :if (or (daemonp) (memq window-system '(x pgtk)))
   :config
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode))))
+  ;; nvm is set up in .bashrc, so we need an interactive shell.
+  (setq exec-path-from-shell-arguments '("-l" "-i"))
+  (exec-path-from-shell-initialize))
 
-;; Bigger buffer for ido
-(use-package ido-vertical-mode
-  :ensure t
-  :init
-  (ido-vertical-mode 1))
-(setq ido-vertical-define-keys 'C-n-C-p-up-down-left-right)
-;; Configure ido-mode
-(setq ido-enable-flex-matching nil)
-(setq ido-create-new-buffer 'always)
-(setq ido-everywhere t )
-(ido-mode 1)
+;;;; ------------------------------------------------------------------
+;;;; Sane defaults
+;;;; ------------------------------------------------------------------
 
-;; Nicer M-x
-(use-package smex
-  :ensure t
-  :init (smex-initialize)
-  :bind
-  ("M-x" . smex))
+(setq use-short-answers t
+      ring-bell-function #'ignore
+      scroll-conservatively 100
+      ;; Backups and auto-saves go in one place instead of littering dirs.
+      backup-directory-alist `(("." . ,(locate-user-emacs-file "backups/")))
+      auto-save-file-name-transforms `((".*" ,(locate-user-emacs-file "auto-saves/") t))
+      create-lockfiles nil
+      c-default-style "linux"
+      python-shell-enable-font-lock nil) ; inferior python is slow otherwise
+(make-directory (locate-user-emacs-file "auto-saves/") t)
+(setq-default indent-tabs-mode nil
+              frame-title-format "GNU Emacs - %b")
 
-;; Avy
-(use-package avy
-  :ensure t
-  :bind
-  ("M-s" . avy-goto-char))
-
-;; Hex colors
-(use-package  rainbow-mode
-  :ensure t)
-;  :init (add-hook 'prog-mode-hook 'rainbow-mode))
-
-;; evil-mode
-(use-package evil
-  :ensure t
-  :init
-  (evil-mode 1)
-  :config
-  (evil-set-initial-state 'term-mode 'emacs)
-  (evil-set-initial-state 'dired-mode 'emacs)
-  (evil-set-initial-state 'eshell-mode 'emacs)
-  (evil-set-initial-state 'gdb 'emacs))
-
-
-;; switching windows
-(use-package switch-window
-  :ensure t
-  :config
-  (setq switch-window-input-style 'minibuffer)
-  (setq switch-window-increase 4)
-  (setq switch-window-threshold 2)
-  (setq switch-window-shortcut-style 'qwerty)
-  (setq switch-window-qwerty-shortcuts
-	'("a" "s" "d" "f" "j" "k" "l" ";"))
-	:bind
-	([remap other-window] . switch-window))
-
-;; Deleting whitespace
-(use-package hungry-delete
-  :ensure t
-  :config
-  (global-hungry-delete-mode))
-
-;; costumizable and actually useful init screen
-(use-package dashboard
-  :ensure t
-  :config
-  (dashboard-setup-startup-hook)
-  (setq dashboard-items '((recents . 10)))
-  (setq dashboard-center-content t)
-  (setq dashboard-footer-messages (list (get-comfort)))
-  (setq dashboard-banner-logo-title "Holo welcomes you to GNU Emacs, KaeTah'r!")
-  (setq dashboard-startup-banner "~/Pictures/cropped2.png"))
-
-;; autocompletion
-(use-package company
-  :ensure t
-  :config
-  (setq company-idle-delay 0)
-  (setq company-minimum-prefix-length 3)
-  (company-tng-configure-default)
-  :init
-  (add-hook 'after-init-hook 'global-company-mode))
-(with-eval-after-load 'company
-  (define-key company-active-map (kbd "C-n") #'company-select-next)
-  (define-key company-active-map (kbd "C-p") #'company-select-previous))
-
-					;C/C++
-(use-package company-irony
-  :ensure t
-  :config
-  (require 'company)
-  (add-to-list 'company-backends 'company-irony))
-
-(use-package irony
-  :ensure t
-  :config
-  (add-hook 'c++-mode-hook 'irony-mode)
-  (add-hook 'c-mode-hook 'irony-mode)
-  (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options))
-
-					;python
-(use-package elpy
-  :ensure t
-  :config
-  (add-to-list 'company-backends 'elpy-company-backend)
-  :init
-  (elpy-enable))
-(when (require 'flycheck nil t)
-  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-  (add-hook 'elpy-mode-hook 'flycheck-mode))
-(use-package py-autopep8
-  :ensure t
-  :config
-  (add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
-  )
-
-;; Syntax checking
-(use-package flycheck
-  :ensure t
-  :init (global-flycheck-mode t))
-
-;; Rainbow pairs
-(use-package rainbow-delimiters
-  :ensure t
-  :init
-  (add-hook 'emacs-lisp-mode-hook 'rainbow-delimiters-mode)
-  (add-hook 'scheme-mode-hook 'rainbow-delimiters-mode)
-  )
-
-;; Modeline
-(use-package smart-mode-line
-  :ensure t
-  :config
-  (sml/toggle-shorten-directory)
-  (sml/toggle-shorten-modes)
-  (setq sml/no-confirm-load-theme t)
-  (sml/setup))
-
-;; Make not so many minor modes appear on my modeline
-(use-package diminish
-  :ensure t
-  :init
-  (diminish 'hungry-delete-mode)
-  (diminish 'beacon-mode)
-  (diminish 'rainbow-delimiters)
-  (diminish 'which-key-mode)
-  (diminish 'eldoc-mode)
-  (diminish 'undo-tree-mode)
-  (diminish 'rainbow-mode))
-
-;; Fix this shit
-;; Improve kill ring
-(use-package popup-kill-ring
-  :ensure t
-  )
-
-;; Mark multiple (like search and replace, just a little easier to control)
-;; Can act like multiple cursors like sublime if you really need to have something like that
-(use-package mark-multiple
-  :ensure t
-  :bind ("C-c q" . mark-next-like-this))
-
-;; Make it easier to highlight a region
-(use-package expand-region
-  :ensure t
-  :bind ("C-q" . er/expand-region))
-
-;; Code snippets
-(use-package yasnippet
-  :ensure t
-  :config
-  (use-package yasnippet-snippets
-    :ensure t)
-  (yas-reload-all))
-
-(add-hook 'c++-mode-hook 'yas-minor-mode)
-(add-hook 'python-mode-hook 'yas-minor-mode)
-(add-hook 'c-mode-hook 'yas-minor-mode)
-(add-hook 'emacs-lisp-mode-hook 'yas-minor-mode)
-(add-hook 'latex-mode-hook 'yas-minor-mode)
-
-;; Manage indent better
-(use-package aggressive-indent
-  :ensure t
-  :config
-  (global-aggressive-indent-mode 1))
-
-;; Install htmlize so org can export to HTML
-(use-package htmlize
-  :ensure t)
-
-;; update emacs packages
-(use-package auto-package-update
-  :ensure t
-  :init
-  (auto-package-update-maybe))
-
-;; nice tree for quick project navigation
-(use-package treemacs
-  :ensure t
-  :config
-  (global-set-key (kbd "<f1>") 'treemacs)
-  )
-
-(add-hook 'treemacs-mode-hook (lambda ()
-				(setq display-line-numbers 'nil)))
-(use-package treemacs-evil
-  :after treemacs evil
-  :ensure t)
-
-;; pdfs
-(use-package pdf-tools
-  :ensure t)
-
-;;discord
-(use-package elcord
-  :unless (daemonp)
-  :ensure t
-  )
-
-;;coq
-(use-package proof-general
-  :ensure t)
-
-;;copilot ew
-(use-package copilot
-  :ensure t)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End of packages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; display columns
-(line-number-mode 1)
+;; Reload files changed on disk (e.g. by Claude) within a second. Buffers
+;; with unsaved edits are never reloaded; use M-x revert-buffer for those.
+(setq auto-revert-interval 1
+      auto-revert-check-vc-info t               ; keep mode-line git branch current
+      global-auto-revert-non-file-buffers t     ; refresh dired too
+      auto-revert-verbose nil)
+(global-auto-revert-mode 1)
 (column-number-mode 1)
+(electric-pair-mode 1)
+(show-paren-mode 1)
+(global-hl-line-mode 1)
+(savehist-mode 1)
+(recentf-mode 1)
+(save-place-mode 1)
+(pixel-scroll-precision-mode 1)
+(when window-system (global-prettify-symbols-mode 1))
 
-;; Auto refresh buffers
-(global-auto-revert-mode t)
+;; Ruler at column 80 in code (color set in `my/apply-faces').
+(setq-default display-fill-column-indicator-column 80
+              display-fill-column-indicator-character ?┊)
+(add-hook 'prog-mode-hook #'display-fill-column-indicator-mode)
 
-;; Spell checking
-(add-hook 'prog-mode-hook 'flyspell-prog-mode)
-(add-hook 'latex-mode-hook 'flyspell-mode)
+;; Line numbers only where they make sense (not in terminals/dashboard).
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+(add-hook 'text-mode-hook #'display-line-numbers-mode)
 
-;; enforce spacing style
-(add-hook 'prog-mode-hook 'auto-fill-mode)
+;; Code folding + spell checking in comments/strings.
+(add-hook 'prog-mode-hook #'hs-minor-mode)
+(add-hook 'prog-mode-hook #'flyspell-prog-mode)
 
-;; code folding
-(add-hook 'prog-mode-hook 'hs-minor-mode)
+;;;; ------------------------------------------------------------------
+;;;; Personal helpers & keys
+;;;; ------------------------------------------------------------------
 
-;; Splitting window shortcuts
 (defun split-and-follow-horizontally ()
   (interactive)
   (split-window-below)
   (other-window 1))
-(global-set-key (kbd "C-x 2") 'split-and-follow-horizontally)
+(global-set-key (kbd "C-x 2") #'split-and-follow-horizontally)
 
 (defun split-and-follow-vertically ()
   (interactive)
   (split-window-right)
   (other-window 1))
-(global-set-key (kbd "C-x 3") 'split-and-follow-vertically)
+(global-set-key (kbd "C-x 3") #'split-and-follow-vertically)
 
-;; Shortcut to edit config
 (defun config-visit ()
   (interactive)
-  (find-file "~/.emacs.d/init.el"))
-(global-set-key (kbd "C-c e") 'config-visit)
+  (find-file (locate-user-emacs-file "init.el")))
+(global-set-key (kbd "C-c e") #'config-visit)
 
-;; Reload config
 (defun config-reload ()
   (interactive)
-  (load-file (expand-file-name "~/.emacs.d/init.el")))
-(global-set-key (kbd "C-c r") 'config-reload)
-
-;; Enable ibuffer
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-
-;; Hide Menu bar
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-;; Make sure syntax highliting is on
-(global-font-lock-mode 1)
-(setq python-shell-enable-font-lock nil) ; if you don't do this then python shell is unbearably slow
-
-
-;; Cleaning up shell mode
-(add-hook 'eshell-mode 'beacon-mode)
-
-;; Init screen and dashboard configuration:
-;; Don't display default init screen
-(setq inhibit-startup-message t)
-
-(electric-pair-mode 1) ; Pairs for syntax
-(show-paren-mode 1) ;shows parenthesis pairs
-(setq c-default-style "linux") ;set indentation  style
-(setq-default frame-title-format "GNU Emacs - %b") ; set better window title
-(scroll-bar-mode -1)
-
-;; set default shell for terminal applications
-(defvar my-term-shell "/bin/bash")
-(defadvice ansi-term (before force-bash)
-  (interactive (list my-term-shell)))
-(ad-activate 'ansi-term)
-
-;;Alias for yes or no
-(defalias 'yes-or-no-p 'y-or-n-p)
-
-;; display line numbers
-(setq-default display-line-numbers 1)
-
-;; Change scroll behaviour
-(setq scroll-conservatively 100)
-
-;; Set Hacker symbols
-(when window-system (global-prettify-symbols-mode t))
-
-;; Org-mode configuration
-
-(setq org-src-window-setup 'current-window) ; Edit code in same window
-(add-hook 'org-mode-hook 'org-indent-mode) ; Visual indentation
-(add-hook 'org-mode-hook 'set-fill-column 80)
-(add-hook 'org-mode-hook 'auto-fill-mode 1)
-
-;; Daemon configuration
-
-;; if running a daemon, intelligently apply the theme to the frame
-(if (daemonp)
-    (add-hook 'after-make-frame-functions(lambda (frame)
-					   (select-frame frame)
-					   (if (window-system frame)
-					       (unless my:theme-window-loaded
-						 (if my:theme-terminal-loaded
-						     (enable-theme my:theme)
-						   (load-theme my:theme t))
-						 (setq my:theme-window-loaded t))
-					     (unless my:theme-terminal-loaded
-					       (if my:theme-window-loaded
-						   (enable-theme my:theme)
-						 (load-theme my:theme t))
-					       (setq my:theme-terminal-loaded t)))))
-
-  (progn
-    (load-theme my:theme t)
-    (if (display-graphic-p)
-        (setq my:theme-window-loaded t)
-      (setq my:theme-terminal-loaded t))))
-;;make it so dashboard is the initial thing
-(setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
-;; stuff that the daemon should load on each frame
-(if (daemonp)
-    (add-hook 'after-make-frame-functions
-	      (lambda (frame)
-		(with-selected-frame frame (set-mouse-color "purple"))
-		(global-prettify-symbols-mode t)
-		(beacon-mode t)
-		(global-hl-line-mode t)
-		)))
-  
-;  (set-mouse-color "pink"))
-
-
-;; Transparency
-(set-frame-parameter (selected-frame) 'alpha ' (95 . 90))
-(add-to-list 'default-frame-alist '(alpha . (95 . 90)))
+  (load-file (locate-user-emacs-file "init.el")))
+(global-set-key (kbd "C-c r") #'config-reload)
 
 (defun toggle-transparency ()
   (interactive)
@@ -420,76 +119,606 @@
      nil 'alpha
      (if (eql (cond ((numberp alpha) alpha)
                     ((numberp (cdr alpha)) (cdr alpha))
-                    ;; Also handle undocumented (<active> <inactive>) form.
                     ((numberp (cadr alpha)) (cadr alpha)))
               100)
          '(95 . 90) '(100 . 100)))))
-(global-set-key (kbd "C-c t") 'toggle-transparency)
+(global-set-key (kbd "C-c T") #'toggle-transparency)
 
-;; disable line numbers on the shell and terminal modes
-(add-hook 'shell-mode-hook (lambda ()
-			     (setq display-line-numbers 'nil)))
-(add-hook 'term-mode-hook (lambda ()
-			    (setq display-line-numbers 'nil)
-			    (beacon-mode 0)))
-(add-hook 'dashboard-mode-hook (lambda ()
-				 (setq display-line-numbers 'nil)))
+(global-set-key (kbd "C-x C-b") #'ibuffer)
 
-;; Fonts auto generated by M-x customize
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ansi-color-faces-vector
-   [default default default italic underline success warning error])
- '(ansi-color-names-vector
-   ["black" "#d55e00" "#009e73" "#f8ec59" "#0072b2" "#cc79a7" "#56b4e9" "white"])
- '(column-number-mode t)
- '(custom-enabled-themes '(xresources))
- '(custom-safe-themes
-   '("e5dc5b39fecbeeb027c13e8bfbf57a865be6e0ed703ac1ffa96476b62d1fae84" "4639288d273cbd3dc880992e6032f9c817f17c4a91f00f3872009a099f5b3f84" "bbef8cbdabf3b084dd01e548e064a1c87e857e2332a8defdf85520ba2b4fc6f1" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "3c83b3676d796422704082049fc38b6966bcad960f896669dfc21a7a37a748fa" "86704574d397606ee1433af037c46611fb0a2787e8b6fd1d6c96361575be72d2" "3cd4f09a44fe31e6dd65af9eb1f10dc00d5c2f1db31a427713a1784d7db7fdfc" default))
- '(equake-default-sh-command "/bin/bash")
- '(equake-default-shell 'eshell)
- '(equake-opacity-active 95)
- '(equake-opacity-inactive 90)
- '(equake-size-height 1.0)
- '(gdb-many-windows t)
- '(menu-bar-mode nil)
- '(package-selected-packages
-   '(copilot elcord diminish smart-mode-line rainbow-delimiters dashboard switch-window ido-vertical-mode telega pdf-tools treemacs-evil treemacs auto-package-update origami pydoc-info htmlize company-irony equake aggressive-indent agressive-indent elpy-company elpy py-autopep8 flycheck yasnippet-snippets yasnippet expand-region mark-multiple popup-kill-ring company hungry-delete evil rainbow-mode avy smex org-bullets try beacon xresources-theme nyx-theme which-key use-package))
- '(tool-bar-mode nil)
- '(warning-suppress-types '((comp) (comp) (comp))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#110e12" :foreground "#ffffff" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 158 :width normal :foundry "PfEd" :family "Terminus (TTF)"))))
- '(company-tooltip ((t (:inherit default :background "#1670127a17c2"))))
- '(company-tooltip-common ((t (:inherit font-lock-constant-face))))
- '(company-tooltip-scrollbar-thumb ((t (:background "#1e9919332066"))))
- '(company-tooltip-scrollbar-track ((t (:background "#2c3324662ecc"))))
- '(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
- '(mode-line ((t (:background "black" :foreground "#9278d6" :box (:line-width -1 :style released-button))))))
+;;;; ------------------------------------------------------------------
+;;;; Theme (xresources, daemon-aware)
+;;;; ------------------------------------------------------------------
 
-;; Highlight line on cursor
-(global-hl-line-mode t)
-(set-face-background 'hl-line "#171318")
+(use-package xresources-theme :defer t)   ; loaded via load-theme below
 
-;; set company colors
-(require 'color)
+(defvar my:theme 'xresources)
+(defvar my:theme-loaded nil)
 
-(let ((bg (face-attribute 'default :background)))
-  (custom-set-faces
-   `(company-tooltip ((t (:inherit default :background ,(color-lighten-name bg 2)))))
-   `(company-scrollbar-bg ((t (:background ,(color-lighten-name bg 10)))))
-   `(company-scrollbar-fg ((t (:background ,(color-lighten-name bg 5)))))
-   `(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
-   `(company-tooltip-common ((t (:inherit font-lock-constant-face))))))
+(defun my/apply-faces ()
+  (set-face-background 'hl-line "#171318")
+  ;; xresources-theme sets this to the plain background, which makes the
+  ;; selected candidate in vertico (and other selections) invisible.
+  (set-face-attribute 'highlight nil :background "#3a2d4a" :foreground 'unspecified)
+  ;; Gutter (fringe + line numbers) as its own panel, set apart from the code.
+  (set-face-attribute 'fringe nil :background "#1a161c")
+  (set-face-attribute 'line-number nil :background "#1a161c" :foreground "#4f4655")
+  (set-face-attribute 'line-number-current-line nil
+                      :background "#1a161c" :foreground "#9278d6" :weight 'bold)
+  (set-face-attribute 'fill-column-indicator nil
+                      :foreground "#2a2330" :background 'unspecified)
+  (set-face-attribute 'mode-line nil :background "black" :foreground "#9278d6"
+                      :box '(:line-width -1 :style released-button)))
 
-;; set modeline colors
-(sml/apply-theme 'respectful)
+(defun my/load-theme-for-frame (&optional frame)
+  "Load the theme once, on the first graphical frame.
+xresources-theme reads X resources, which only exist with a GUI
+display. In daemon mode that means waiting for a real frame.
+Terminal frames (emacs -nw) just keep the terminal's colors."
+  (with-selected-frame (or frame (selected-frame))
+    (when (and (display-graphic-p) (not my:theme-loaded))
+      (load-theme my:theme t)
+      (my/apply-faces)
+      (setq my:theme-loaded t))))
 
-;; set indentation highlight color for languages that need it
-(set-face-background 'highlight-indentation-face "#1e9919332066")
+(if (daemonp)
+    (add-hook 'after-make-frame-functions #'my/load-theme-for-frame)
+  (my/load-theme-for-frame))
+
+;;;; ------------------------------------------------------------------
+;;;; Evil
+;;;; ------------------------------------------------------------------
+
+(use-package evil
+  :init
+  (setq evil-want-keybinding nil      ; required by evil-collection
+        evil-want-C-u-scroll t
+        evil-undo-system 'undo-redo)
+  :config
+  (evil-mode 1)
+  (dolist (mode '(term-mode ghostel-mode dired-mode eshell-mode gdb-mode
+                            claude-code-ide-mode))
+    (evil-set-initial-state mode 'emacs)))
+
+(use-package evil-collection
+  :after evil
+  :config
+  ;; Only the modes where vim keys really help; extend as needed.
+  (evil-collection-init '(magit xref flymake help info ibuffer compile
+                                eglot vertico corfu consult)))
+
+;;;; ------------------------------------------------------------------
+;;;; Minibuffer completion: vertico + orderless + marginalia + consult
+;;;; ------------------------------------------------------------------
+
+(use-package vertico
+  :init (vertico-mode 1)
+  :bind (:map vertico-map
+              ("C-n" . vertico-next)
+              ("C-p" . vertico-previous)))
+
+(use-package orderless
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles partial-completion)))))
+
+(use-package marginalia
+  :init (marginalia-mode 1))
+
+(use-package consult
+  :bind (("C-x b"   . consult-buffer)
+         ("M-y"     . consult-yank-pop)    ; browse kill ring
+         ("C-c l"   . consult-line)
+         ("C-c g"   . consult-ripgrep)     ; project-wide search (needs rg)
+         ("C-c i"   . consult-imenu)
+         ("C-c f"   . consult-recent-file)
+         ("C-c !"   . consult-flymake)))
+
+;; Project-wide search & replace, VSCode style:
+;;   C-c g  search  ->  C-c C-e  export results to a buffer
+;;   C-c C-p  make that buffer editable  ->  edit (e.g. :%s/old/new/)
+;;   C-c C-c  write changes to all files   (C-c C-k to abort)
+;; Simpler built-in alternative: C-x p r (query-replace across the project).
+(use-package embark
+  :bind (("C-." . embark-act)              ; actions on thing at point / candidate
+         ("C-h B" . embark-bindings)
+         :map minibuffer-local-map
+         ("C-c C-e" . embark-export))
+  :init
+  ;; Evil's normal state binds C-. (repeat-pop); embark is more useful there.
+  (with-eval-after-load 'evil
+    (define-key evil-normal-state-map (kbd "C-.") #'embark-act)))
+
+(use-package embark-consult
+  :after (embark consult))
+
+(use-package wgrep
+  :custom
+  (wgrep-auto-save-buffer t)               ; save edited files automatically
+  (wgrep-change-readonly-file t))
+
+;;;; ------------------------------------------------------------------
+;;;; In-buffer completion: corfu
+;;;; ------------------------------------------------------------------
+
+(use-package corfu
+  :custom
+  (corfu-auto t)
+  (corfu-auto-delay 0.15)
+  (corfu-auto-prefix 2)
+  (corfu-cycle t)
+  :init
+  (global-corfu-mode 1)
+  (corfu-popupinfo-mode 1))
+
+(use-package cape
+  :init
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-dabbrev))
+
+;;;; ------------------------------------------------------------------
+;;;; Tree-sitter, LSP (eglot), linting (flymake), formatting (apheleia)
+;;;; ------------------------------------------------------------------
+
+;; Uses python-ts-mode, tsx-ts-mode, etc., and offers to install grammars.
+(use-package treesit-auto
+  :custom (treesit-auto-install 'prompt)
+  :config
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode 1))
+
+(use-package eglot
+  :ensure nil
+  :hook ((python-base-mode
+          js-base-mode
+          typescript-ts-base-mode) . eglot-ensure)
+  :bind (:map eglot-mode-map
+              ("C-c a" . eglot-code-actions)
+              ("C-c n" . eglot-rename)
+              ("C-c d" . eldoc-doc-buffer))
+  :custom
+  (eglot-autoshutdown t)
+  (eglot-events-buffer-config '(:size 0)) ; faster: no event logging
+  :config
+  (add-to-list 'eglot-server-programs
+               '((python-mode python-ts-mode) . ("basedpyright-langserver" "--stdio"))))
+
+;; ruff lints in the flymake diagnostics alongside basedpyright.
+(use-package flymake-ruff
+  :hook (eglot-managed-mode . (lambda ()
+                                (when (derived-mode-p 'python-base-mode)
+                                  (flymake-ruff-load)))))
+
+(use-package flymake
+  :ensure nil
+  :bind (:map flymake-mode-map
+              ("M-n" . flymake-goto-next-error)
+              ("M-p" . flymake-goto-prev-error)))
+
+;; Format on save: ruff for Python, prettier (project-local via npx) for JS/TS.
+(use-package apheleia
+  :config
+  (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-isort ruff))
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff))
+  (apheleia-global-mode 1))
+
+;; ESLint alongside the TypeScript server (eglot runs one server per buffer),
+;; using the project's own node_modules/.bin/eslint.
+(use-package flymake-eslint
+  :custom (flymake-eslint-prefer-json-diagnostics t)
+  :init
+  (defun my/maybe-enable-eslint ()
+    (when-let* (((derived-mode-p 'js-base-mode 'typescript-ts-base-mode))
+                (root (locate-dominating-file default-directory
+                                              "node_modules/.bin/eslint")))
+      (setq-local flymake-eslint-executable-name
+                  (expand-file-name "node_modules/.bin/eslint" root)
+                  flymake-eslint-project-root root)
+      (flymake-eslint-enable)))
+  ;; eglot resets the diagnostic backends when it starts, so hook there too.
+  (add-hook 'eglot-managed-mode-hook #'my/maybe-enable-eslint)
+  (add-hook 'js-base-mode-hook #'my/maybe-enable-eslint)
+  (add-hook 'typescript-ts-base-mode-hook #'my/maybe-enable-eslint))
+
+;; Debugger.
+;; VSCode-style keys: F5 start/continue, F9 breakpoint, F10 step over,
+;; F11 step in, S-F11 step out, S-F5 stop, C-S-F5 restart.
+;; Everything else is under C-x C-a (e.g. C-x C-a c to set a condition).
+(use-package dape
+  :bind (("<f5>"    . my/dape-start-or-continue)
+         ("S-<f5>"  . dape-quit)
+         ("C-S-<f5>" . dape-restart)
+         ("<f9>"    . dape-breakpoint-toggle)
+         ("<f10>"   . dape-next)
+         ("<f11>"   . dape-step-in)
+         ("S-<f11>" . dape-step-out))
+  :hook (kill-emacs . dape-breakpoint-save)    ; breakpoints survive restarts
+  :custom
+  (dape-buffer-window-arrangement 'right)
+  (dape-inlay-hints t)                         ; show variable values inline
+  :init
+  (defun my/dape-start-or-continue ()
+    (interactive)
+    (require 'dape)
+    (call-interactively
+     (if (bound-and-true-p dape-active-mode) #'dape-continue #'dape)))
+
+  (defun my/django-root ()
+    (or (locate-dominating-file default-directory "manage.py")
+        (user-error "No manage.py found above %s" default-directory)))
+  :config
+  (dape-breakpoint-load)
+
+  ;; `M-x dape RET django' : runserver under the debugger.
+  ;; Reuses dape's built-in debugpy config, pointed at manage.py.
+  (let ((cfg (copy-sequence (cdr (assq 'debugpy dape-configs)))))
+    (setq cfg (plist-put cfg :program
+                         (lambda () (expand-file-name "manage.py" (my/django-root)))))
+    (setq cfg (plist-put cfg :cwd #'my/django-root))
+    (setq cfg (plist-put cfg :args ["runserver" "--noreload"]))
+    (setq cfg (plist-put cfg :django t))
+    (add-to-list 'dape-configs (cons 'django cfg))))
+
+;; Per-project environments from direnv (.envrc).
+(use-package envrc
+  :if (executable-find "direnv")
+  :hook (after-init . envrc-global-mode))
+
+;; Django templates (and other HTML).
+(use-package web-mode
+  :mode ("\\.html?\\'" "\\.djhtml\\'")
+  :custom
+  (web-mode-engines-alist '(("django" . "\\.html?\\'")))
+  (web-mode-markup-indent-offset 2)
+  (web-mode-code-indent-offset 2)
+  (web-mode-css-indent-offset 2))
+
+;;;; ------------------------------------------------------------------
+;;;; Markdown (rendering uses pandoc)
+;;;; ------------------------------------------------------------------
+;; In Emacs:  C-c C-x C-m  hide/show markup (**, #, links) for a clean read
+;;            C-c C-c l    live preview side by side (eww; no mermaid)
+;; Browser:   C-c C-c m    live preview with mermaid diagrams
+
+(use-package markdown-mode
+  :mode ("README\\.md\\'" . gfm-mode)
+  :custom
+  (markdown-command "pandoc -f gfm -t html5")
+  (markdown-header-scaling t)                  ; bigger headings
+  (markdown-fontify-code-blocks-natively t)    ; real syntax colors in ``` blocks
+  (markdown-italic-underscore t)
+  :bind (:map markdown-mode-map
+              ("C-c C-c m" . markdown-preview-mode)))
+
+(use-package markdown-preview-mode
+  :commands markdown-preview-mode
+  :config
+  ;; Render ```mermaid blocks on every update.
+  (add-to-list 'markdown-preview-javascript
+               "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js")
+  (setq markdown-preview-script-oninit
+        "mermaid.initialize({ startOnLoad: false, theme: 'default' });"
+        markdown-preview-script-onupdate
+        "document.querySelectorAll('code.language-mermaid, pre.mermaid > code').forEach(function (c) {
+           var pre = c.parentNode; pre.className = 'mermaid'; pre.textContent = c.textContent;
+         });
+         mermaid.run({ querySelector: 'pre.mermaid' });"))
+
+;;;; ------------------------------------------------------------------
+;;;; Git
+;;;; ------------------------------------------------------------------
+
+(use-package magit
+  :bind ("C-x g" . magit-status))
+
+(use-package diff-hl
+  :hook ((after-init . global-diff-hl-mode)
+         (magit-post-refresh . diff-hl-magit-post-refresh))
+  :custom
+  (diff-hl-draw-borders nil)            ; solid bars instead of outlined ones
+  :custom-face
+  (diff-hl-insert ((t (:foreground "#50c878" :background "#50c878"))))
+  (diff-hl-change ((t (:foreground "#3794ff" :background "#3794ff"))))
+  (diff-hl-delete ((t (:foreground "#e05561" :background "#e05561"))))
+  :config
+  (diff-hl-flydiff-mode 1))             ; update as you type, not just on save
+
+;; GitLens-style blame at the end of the current line.
+;; For full-file blame: M-x magit-blame (or C-x v g).
+(use-package blamer
+  :hook (after-init . global-blamer-mode)      ; on everywhere by default
+  :bind (("C-c b" . blamer-mode)               ; toggle off/on in this buffer
+         ("C-c B" . blamer-show-commit-info))  ; popup with full commit info
+  :custom
+  (blamer-idle-time 0.5)
+  (blamer-min-offset 40)
+  (blamer-author-formatter "  %s, ")
+  (blamer-datetime-formatter "%s")
+  (blamer-commit-formatter " · %s")
+  :custom-face
+  (blamer-face ((t (:foreground "#4f4655" :background unspecified
+                                :italic t :height 0.9)))))
+
+;;;; ------------------------------------------------------------------
+;;;; Remote files (TRAMP): C-x C-f /ssh:user@host:/path  (or /sftp:...)
+;;;; ------------------------------------------------------------------
+
+(use-package tramp
+  :ensure nil
+  :defer t
+  :custom
+  (tramp-default-method "ssh")                    ; faster than scp for small files
+  (remote-file-name-inhibit-locks t)              ; no .#lock files on the server
+  (remote-file-name-inhibit-auto-save-visited t)
+  (tramp-use-scp-direct-remote-copying t)
+  (tramp-verbose 1)
+  :config
+  ;; Reuse one SSH connection for everything (big speedup).
+  (setq tramp-ssh-controlmaster-options
+        "-o ControlMaster=auto -o ControlPath=tramp.%%C -o ControlPersist=60")
+  ;; Async processes over ssh: makes magit / eglot over TRAMP much faster.
+  (connection-local-set-profile-variables
+   'remote-direct-async-process '((tramp-direct-async-process . t)))
+  (connection-local-set-profiles
+   '(:application tramp :protocol "ssh") 'remote-direct-async-process))
+
+;;;; ------------------------------------------------------------------
+;;;; AI: Copilot (inline suggestions) and Claude Code
+;;;; ------------------------------------------------------------------
+
+(defun my/maybe-enable-copilot ()
+  "Enable copilot only once its language server is installed.
+Otherwise copilot-mode errors in every code buffer on a fresh machine."
+  (if (ignore-errors (copilot-server-executable))
+      (progn (copilot-mode 1)
+             (copilot-nes-mode 1))
+    (message "Copilot server missing: run M-x copilot-install-server")))
+
+;; Next Edit Suggestions: TAB accepts, C-g dismisses. Its keys are only
+;; bound while a suggestion shows; let them win over evil's TAB then.
+(with-eval-after-load 'copilot-nes
+  (with-eval-after-load 'evil
+    (evil-make-overriding-map copilot-nes-mode-map 'normal)
+    (add-hook 'copilot-nes-mode-hook #'evil-normalize-keymaps)))
+
+(use-package copilot
+  :hook (prog-mode . my/maybe-enable-copilot)
+  :bind (:map copilot-completion-map
+              ;; When the corfu popup is open, corfu's TAB wins; otherwise
+              ;; TAB accepts the copilot ghost text.
+              ("<tab>" . copilot-accept-completion)
+              ("TAB"   . copilot-accept-completion)
+              ("M-f"   . copilot-accept-completion-by-word)
+              ("M-e"   . copilot-accept-completion-by-line)
+              ("M-n"   . copilot-next-completion)
+              ("M-p"   . copilot-previous-completion))
+  :custom
+  (copilot-indent-offset-warning-disable t)
+  (copilot-max-char-warning-disable t))
+
+;; Terminal emulator (used by Claude Code; M-x ghostel for a shell).
+;; Flat tabs matching the gutter instead of the default raised grey buttons.
+(use-package tab-line
+  :ensure nil
+  :defer t
+  :custom
+  (tab-line-separator "")
+  :custom-face
+  (tab-line ((t (:inherit nil :background "#1a161c" :foreground "#4f4655"
+                          :box nil :height 0.9))))
+  (tab-line-tab ((t (:inherit tab-line :background "#110e12" :foreground "#9278d6"
+                              :box nil))))
+  (tab-line-tab-inactive ((t (:inherit tab-line :box nil))))
+  (tab-line-tab-inactive-alternate ((t (:inherit tab-line :box nil))))
+  (tab-line-tab-current ((t (:inherit tab-line :background "#110e12"
+                                      :foreground "#9278d6" :weight bold :box nil))))
+  (tab-line-highlight ((t (:background "#3a2d4a" :foreground "#ffffff" :box nil)))))
+
+;; C-c t toggles a project terminal panel along the bottom of the frame;
+;; C-u C-c t opens another terminal in it. Terminals show as tabs:
+;; C-c ] / C-c [ next/previous tab.
+(use-package ghostel
+  :bind (("C-c t" . my/toggle-terminal)
+         :map ghostel-mode-map
+         ("C-c ]" . tab-line-switch-to-next-tab)
+         ("C-c [" . tab-line-switch-to-prev-tab))
+  :init
+  (defconst my/terminal-buffer-regexp "\\*[^*]*ghostel[^*]*\\*")
+
+  (defun my/terminal-buffers ()
+    (sort (seq-filter (lambda (b) (string-match-p my/terminal-buffer-regexp
+                                                  (buffer-name b)))
+                      (buffer-list))
+          :key #'buffer-name))
+
+  (defun my/terminal-tab-name (buffer &optional _buffers)
+    "\"*proj-ghostel*<2>\" -> \" proj 2 \"."
+    (let* ((name (buffer-name buffer))
+           (num (and (string-match "<\\([0-9]+\\)>\\'" name) (match-string 1 name)))
+           (base (replace-regexp-in-string
+                  "-?ghostel" "" (string-trim (replace-regexp-in-string "<[0-9]+>\\'" "" name)
+                                              "\\*" "\\*"))))
+      (format " %s%s " (if (string-empty-p base) "terminal" base)
+              (if num (concat " " num) ""))))
+
+  (defun my/new-terminal ()
+    (interactive)
+    (if (project-current) (ghostel-project-new) (ghostel-new)))
+
+  (add-hook 'ghostel-mode-hook
+            (lambda ()
+              (when (string-match-p my/terminal-buffer-regexp (buffer-name))
+                (setq-local tab-line-tabs-function #'my/terminal-buffers
+                            tab-line-tab-name-function #'my/terminal-tab-name
+                            tab-line-new-tab-choice #'my/new-terminal
+                            tab-line-close-tab-function #'kill-buffer)
+                (tab-line-mode 1))))
+
+  ;; Shell terminals (not the Claude buffer) open as a full-width bottom panel.
+  (add-to-list 'display-buffer-alist
+               `(,my/terminal-buffer-regexp
+                 (display-buffer-reuse-window display-buffer-in-side-window)
+                 (side . bottom)
+                 (slot . 0)
+                 (window-height . 0.3)))
+
+  (defun my/toggle-terminal (&optional new)
+    "Focus, hide, or open the bottom terminal panel.
+With prefix argument NEW, open an additional terminal."
+    (interactive "P")
+    (let ((win (seq-find (lambda (w)
+                           (string-match-p my/terminal-buffer-regexp
+                                           (buffer-name (window-buffer w))))
+                         (window-list))))
+      (cond (new (my/new-terminal))
+            ((and win (eq win (selected-window))) (delete-window win))
+            (win (select-window win))
+            ((when-let* ((last (seq-find (lambda (b)
+                                           (string-match-p my/terminal-buffer-regexp
+                                                           (buffer-name b)))
+                                         (buffer-list))))
+               (pop-to-buffer last)))
+            ((project-current) (ghostel-project))
+            (t (ghostel))))))
+
+;; Claude Code inside Emacs, connected to the editor (selection,
+;; diagnostics, diffs in ediff).
+(use-package claude-code-ide
+  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
+  :bind ("C-c C-'" . claude-code-ide-menu)
+  :custom (claude-code-ide-terminal-backend 'ghostel)
+  :config (claude-code-ide-emacs-tools-setup))
+
+;;;; ------------------------------------------------------------------
+;;;; Editing helpers
+;;;; ------------------------------------------------------------------
+
+(use-package which-key
+  :ensure nil                           ; built in since Emacs 30
+  :init (which-key-mode 1))
+
+(use-package diminish)
+
+(use-package avy
+  :bind ("M-s" . avy-goto-char))
+
+(use-package expand-region
+  :bind ("C-q" . er/expand-region))
+
+(use-package hungry-delete
+  :diminish
+  :config (global-hungry-delete-mode 1))
+
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package rainbow-mode
+  :diminish)
+
+(use-package yasnippet
+  :diminish yas-minor-mode
+  :hook (prog-mode . yas-minor-mode)
+  :config (yas-reload-all))
+(use-package yasnippet-snippets :after yasnippet)
+
+(use-package switch-window
+  :bind ([remap other-window] . switch-window)
+  :custom
+  (switch-window-input-style 'minibuffer)
+  (switch-window-increase 4)
+  (switch-window-threshold 2)
+  (switch-window-shortcut-style 'qwerty)
+  (switch-window-qwerty-shortcuts '("a" "s" "d" "f" "j" "k" "l" ";")))
+
+(use-package beacon
+  :diminish
+  :config (beacon-mode 1))
+
+(use-package try)
+
+;;;; ------------------------------------------------------------------
+;;;; Project tree
+;;;; ------------------------------------------------------------------
+
+;; Inside the tree: RET/TAB open/expand, `?' shows all keys,
+;; `cf' new file, `cd' new dir, `R' rename, `d' delete, `m' move.
+(use-package treemacs
+  :bind (("<f1>"  . treemacs)
+         ("C-c 0" . treemacs-select-window))  ; jump focus to the tree
+  :custom
+  (treemacs-width 32)
+  (treemacs-is-never-other-window t)  ; C-x o / switch-window skip it
+  (treemacs-show-hidden-files t)
+  (treemacs-collapse-dirs 3)          ; a/b/c shown as one row
+  :config
+  (treemacs-project-follow-mode 1)    ; show the current project, not a fixed list
+  (treemacs-follow-mode 1)            ; highlight the current file
+  (treemacs-filewatch-mode 1)
+  (treemacs-git-mode 'deferred)
+  (treemacs-hide-gitignored-files-mode 1)
+  (treemacs-fringe-indicator-mode 'always))
+(use-package treemacs-evil :after (treemacs evil))
+(use-package treemacs-magit :after (treemacs magit))
+
+;;;; ------------------------------------------------------------------
+;;;; Org
+;;;; ------------------------------------------------------------------
+
+(use-package org
+  :ensure nil
+  :custom (org-src-window-setup 'current-window)
+  :hook ((org-mode . org-indent-mode)
+         (org-mode . auto-fill-mode)
+         (org-mode . (lambda () (setq fill-column 80)))))
+
+(use-package org-bullets
+  :hook (org-mode . org-bullets-mode))
+
+(use-package htmlize)                   ; org HTML export of code blocks
+
+;;;; ------------------------------------------------------------------
+;;;; Misc packages
+;;;; ------------------------------------------------------------------
+
+;; Weekly package updates; delete superseded versions so elpa/ doesn't bloat.
+(use-package auto-package-update
+  :custom
+  (auto-package-update-delete-old-versions t)
+  (auto-package-update-hide-results t)
+  (auto-package-update-interval 7)
+  :config
+  (auto-package-update-maybe))
+
+;;;; ------------------------------------------------------------------
+;;;; Waifu & roll (optional: separate repos cloned into lisp/)
+;;;; ------------------------------------------------------------------
+
+(dolist (pkg '("waifu" "roll"))
+  (let ((dir (locate-user-emacs-file (concat "lisp/" pkg))))
+    (when (file-directory-p dir)
+      (add-to-list 'load-path dir))))
+
+(when (require 'waifu nil t)
+  (setq waifu-name "Holo"
+        weeb-name "KaeTah'r")
+  (global-set-key (kbd "C-c c") 'comfort))
+(require 'roll nil t)
+
+;;;; ------------------------------------------------------------------
+;;;; Dashboard
+;;;; ------------------------------------------------------------------
+
+(use-package dashboard
+  :config
+  (let ((banner (expand-file-name "~/Pictures/cropped2.png")))
+    (setq dashboard-items '((recents . 10) (projects . 5))
+          dashboard-projects-backend 'project-el
+          dashboard-center-content t
+          dashboard-banner-logo-title "Holo welcomes you to GNU Emacs, KaeTah'r!"
+          dashboard-startup-banner (if (file-exists-p banner) banner 'logo)))
+  (when (fboundp 'get-comfort)
+    (setq dashboard-footer-messages (list (get-comfort))))
+  (dashboard-setup-startup-hook)
+  (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name))))
+
+;;; init.el ends here

@@ -1,0 +1,77 @@
+#+title: emacs-config
+
+Emacs 30 config: evil, vertico/corfu, eglot (Python/Django + React/TS),
+magit, Copilot, and Claude Code.
+
+* Layout
+
+| File                     | Tracked | Purpose                                                  |
+|--------------------------+---------+----------------------------------------------------------|
+| =early-init.el=          | yes     | Startup speed, UI chrome, transparency                   |
+| =init.el=                | yes     | Everything else                                          |
+| =machines/<hostname>.el= | yes     | Per-machine overrides (font size, etc.)                  |
+| =local.el=               | no      | Secrets / one-off experiments on this machine            |
+| =custom.el=              | no      | =M-x customize= output                                   |
+| =lisp/=                  | no      | Personal side projects (waifu, roll), loaded if present |
+
+Packages install themselves on first start (=elpa/= is not tracked).
+To add a new machine, create =machines/$(hostname).el=.
+
+* Setup on a new machine
+
+#+begin_src sh
+git clone git@github.com:KaeTahr/emacs-config.git ~/.emacs.d
+
+# From your system package manager:
+#   ripgrep, direnv, pandoc, pipx
+echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
+
+# Language servers / formatters
+npm i -g basedpyright typescript-language-server typescript   # node via nvm
+pipx install ruff        # or: uv tool install ruff
+
+# Claude Code CLI (see https://docs.claude.com/en/docs/claude-code/setup)
+curl -fsSL https://claude.ai/install.sh | bash
+#+end_src
+
+Then in Emacs:
+
+- =M-x copilot-install-server=, then =M-x copilot-login=
+- Tree-sitter grammars: you'll be prompted the first time you open a
+  =.py= / =.tsx= / etc. file.
+
+For each Python project, add an =.envrc= with =source .venv/bin/activate=
+and run =direnv allow= so eglot/basedpyright use the project's venv.
+For debugging, also =pip install debugpy= in that venv.
+
+ESLint needs nothing global: it runs the project's own
+=node_modules/.bin/eslint= when present.
+
+* Keys worth remembering
+
+| Key                                               | Action                                                    |
+|---------------------------------------------------+-----------------------------------------------------------|
+| =C-c C-'=                                         | Claude Code menu (start session, send selection, ...)     |
+| =TAB= / =M-f= / =M-e=                             | Accept Copilot suggestion / word / line                   |
+| =TAB= / =C-g=                                     | Accept / dismiss Copilot next-edit suggestion             |
+| =C-x g=                                           | Magit                                                     |
+| =C-c g=                                           | ripgrep in project                                        |
+| =C-c l=                                           | Search lines in buffer                                    |
+| =C-x p f=                                         | Find file in project                                      |
+| =C-c g= → =C-c C-e= → =C-c C-p= → edit → =C-c C-c= | Project-wide search & replace                             |
+| =C-x p r=                                         | Project-wide query-replace (y/n per match)                |
+| =C-.=                                             | Actions on thing at point / completion candidate (embark) |
+| =F5= / =S-F5=                                     | Debug: start or continue / stop                           |
+| =F9= / =F10= / =F11= / =S-F11=                    | Breakpoint / step over / step in / step out               |
+| =M-x dape RET django=                             | Debug =manage.py runserver=                               |
+| =C-c a= / =C-c n=                                 | LSP code action / rename                                  |
+| =M-n= / =M-p=                                     | Next / previous diagnostic                                |
+| =C-c b= / =C-c B=                                 | Toggle inline blame / show commit popup                   |
+| =M-x magit-blame=                                 | Full-file blame                                           |
+| =<f1>= / =C-c 0=                                  | Toggle / focus file tree (=?= inside for keys)            |
+| =C-x C-f /ssh:host:/path=                         | Open a remote file (TRAMP; =/sftp:= also works)           |
+| =C-c T=                                           | Toggle terminal panel at the bottom (project root)        |
+| =C-c C-x C-m=                                     | Markdown: hide/show markup                                |
+| =C-c C-c l= / =C-c C-c m=                         | Markdown: preview in Emacs / in browser (with mermaid)    |
+| =C-h e=                                           | Show =*Messages*= (copy error text from there)            |
+| =C-c e= / =C-c r=                                 | Edit / reload config                                      |

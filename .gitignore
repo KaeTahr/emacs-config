@@ -1,0 +1,38 @@
+# Installed packages / build artifacts (reinstalled automatically from init.el)
+/elpa/
+/elpa.old/
+/eln-cache/
+/tree-sitter/
+/.cache/
+/irony/
+
+# Personal side projects
+/lisp/
+
+# Per-machine, unversioned state
+/custom.el
+/local.el
+/auto-save-list/
+/backups/
+/auto-saves/
+/transient/
+/eshell/
+/url/
+tramp
+dape-breakpoints
+recentf
+savehist
+history
+places
+projects
+bookmarks
+network-security.data
+ido.last*
+smex-items
+.last-package-update-day
+*~
+\#*\#
+.#*
+
+# Editors
+/.vscode/
